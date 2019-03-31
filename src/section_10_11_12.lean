@@ -39,10 +39,8 @@ instance S.vector_space : vector_space α S := { .. S.module }
 
 instance fin_q_has_zero : has_zero (fin q) := ⟨⟨0, one_le_q⟩⟩
 
-def bdvec : finset (fin n →₀ fin q) := finset.univ
-
 def M : finset (mv_polynomial (fin n) α):=
-finset.image (λd : fin n →₀ ℕ, monomial d (1:α)) (bdvec.image $ λ f, f.map_range fin.val rfl)
+(finset.univ.image $ λ f : fin n →₀ fin q, f.map_range fin.val rfl).image (λd : fin n →₀ ℕ, monomial d (1:α))
 
 lemma linear_independent_M : linear_independent α (↑M : set (mv_polynomial (fin n) α)) :=
 (mv_polynomial.is_basis_monomials _ _).1.mono $ λ p hp,
@@ -255,7 +253,7 @@ begin
     rw [split_left, finsupp.support_filter, finset.mem_filter] at hm,
     let f : fin n → fin q := λi, ⟨m₀.count i, lt_of_le_of_lt
       (multiset.count_le_of_le _ $ le_add_right _ _) (mem_coeff_support_q _ _ hm.1 i)⟩,
-    refine ⟨⟨_, ⟨f, finset.mem_univ _, rfl⟩, _⟩, _⟩,
+    refine ⟨⟨_, ⟨f, rfl⟩, _⟩, _⟩,
     { congr, ext i, refl },
     { rw [monomial_total_degree, ← card_to_multiset],
       convert le_of_lt hm.2,
@@ -278,7 +276,7 @@ begin
     rw [finsupp.support_filter, finset.mem_filter] at hm,
     let f : fin n → fin q := λi, ⟨m₁.count i, lt_of_le_of_lt
       (multiset.count_le_of_le _ $ le_add_left _ _) (mem_coeff_support_q _ _ hm.1 i)⟩,
-    refine ⟨⟨_, ⟨f, finset.mem_univ _, rfl⟩, _⟩, _⟩,
+    refine ⟨⟨_, ⟨f, rfl⟩, _⟩, _⟩,
     { congr, ext i, refl },
     { rw [monomial_total_degree, ← card_to_multiset],
       have d_le : d / 2 ≤ ↑(card m₀) := le_of_not_gt hm.2,

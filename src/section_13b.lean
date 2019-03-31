@@ -609,7 +609,7 @@ begin
   simp [M, poly_cast] at hM ⊢,
   rcases hM with ⟨a', ⟨a, ha, rfl⟩, rfl⟩,
   simp only [mv_polynomial.rename_monomial],
-  refine ⟨_, ⟨a.emb_domain ⟨_, fin.injective_cast_le h⟩, finset.mem_univ _, _⟩, rfl⟩,
+  refine ⟨_, ⟨a.emb_domain ⟨_, fin.injective_cast_le h⟩, _⟩, rfl⟩,
   rw [← finsupp.emb_domain_map_range, finsupp.emb_domain_eq_map_domain],
   refl
 end
