@@ -22,7 +22,7 @@ theorem cap_set_problem_specific (n : ℕ) {A : finset (fin n → ℤ/3ℤ)}
   ↑A.card ≤ 198 * ((((3 : ℝ) / 8)^3 * (207 + 33*real.sqrt 33))^(1/3 : ℝ))^n
 ```
 
-All three are found at the end of [section_1b.lean](src/section_1b.lean).
+All three are found at the end of `section_1b.lean`.
 
 Install
 ==
