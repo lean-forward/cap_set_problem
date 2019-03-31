@@ -6,14 +6,15 @@ Theorems
 ==
 
 ```lean
-theorem theorem_13_17 {α : Type} [discrete_field α] [fintype α] {a b c : α}
-  (hq : fintype.card α = 3) (hc : c ≠ 0) (habc : a + b + c = 0) :
-  ∃ B : ℝ, ∀ {n : ℕ} {A : finset (fin n → α)},
-  (∀ x y z : fin n → α, x ∈ A → y ∈ A → z ∈ A → a • x + b • y + c • z = 0 → x = y ∧ x = z) →
-  ↑A.card ≤ B * ((((3 : ℝ) / 8)^3 * (207 + 33*real.sqrt 33))^(1/3 : ℝ))^n
+theorem general_cap_set {α : Type} [discrete_field α] [fintype α] :
+  ∃ C B : ℝ, B > 0 ∧ C > 0 ∧ C < fintype.card α ∧
+    ∀ {a b c : α} {n : ℕ} {A : finset (fin n → α)},
+      c ≠ 0 → a + b + c = 0 →
+      (∀ x y z : fin n → α, x ∈ A → y ∈ A → z ∈ A → a • x + b • y + c • z = 0 → x = y ∧ x = z) →
+      ↑A.card ≤ B * C^n
 
-theorem cap_set_problem :
-  ∃ B : ℝ, ∀ {n : ℕ} {A : finset (fin n → ℤ/3ℤ)},
+theorem cap_set_problem : ∃ B : ℝ,
+  ∀ {n : ℕ} {A : finset (fin n → ℤ/3ℤ)},
     (∀ x y z : fin n → ℤ/3ℤ, x ∈ A → y ∈ A → z ∈ A → x + y + z = 0 → x = y ∧ x = z) →
     ↑A.card ≤ B * ((((3 : ℝ) / 8)^3 * (207 + 33*real.sqrt 33))^(1/3 : ℝ))^n
 
@@ -22,7 +23,7 @@ theorem cap_set_problem_specific (n : ℕ) {A : finset (fin n → ℤ/3ℤ)}
   ↑A.card ≤ 198 * ((((3 : ℝ) / 8)^3 * (207 + 33*real.sqrt 33))^(1/3 : ℝ))^n
 ```
 
-All three are found at the end of `section_1b.lean`.
+All three are found in `section_1b.lean`.
 
 Install
 ==

@@ -873,12 +873,11 @@ end
 end
 
 section
-variables {α : Type} [discrete_field α] [fintype α]
 set_option class.instance_max_depth 200
-local notation `q` := @q α _ _
 
-theorem theorem_13_16 : ∃ C B : ℝ, B > 0 ∧ C > 0 ∧
-  C < q ∧ ∀ {a b c : α} {n : ℕ} {A : finset (fin n → α)},
+theorem general_cap_set {α : Type} [discrete_field α] [fintype α] :
+  ∃ C B : ℝ, B > 0 ∧ C > 0 ∧
+  C < fintype.card α ∧ ∀ {a b c : α} {n : ℕ} {A : finset (fin n → α)},
    c ≠ 0 → a + b + c = 0 →
    (∀ x y z : fin n → α, x ∈ A → y ∈ A → z ∈ A → a • x + b • y + c • z = 0 → x = y ∧ x = z) →
     ↑A.card ≤ B * C^n :=
