@@ -999,19 +999,19 @@ calc
 
 section
 set_option class.instance_max_depth 200
-variables [α : Type] [discrete_field α] [fintype α] (hq : @q α _ _ = 3) {a b c : α} (hc : c ≠ 0)
-    (habc : a + b + c = 0)
-include hq hc habc
 
-theorem theorem_13_17 : ∃ B : ℝ, ∀ {n : ℕ} {A : finset (fin n → α)},
+theorem theorem_13_17 {α : Type} [discrete_field α] [fintype α] {a b c : α}
+  (hq : fintype.card α = 3) (hc : c ≠ 0) (habc : a + b + c = 0) :
+  ∃ B : ℝ, ∀ {n : ℕ} {A : finset (fin n → α)},
   (∀ x y z : fin n → α, x ∈ A → y ∈ A → z ∈ A → a • x + b • y + c • z = 0 → x = y ∧ x = z) →
   ↑A.card ≤ B * ((((3 : ℝ) / 8)^3 * (207 + 33*real.sqrt 33))^(1/3 : ℝ))^n :=
 begin
   apply exists.intro,
   intros n A ha,
   convert theorem_13_14 hc habc ha r_pos r_lt_one,
-  rw [hq, c_r_cuberoot]
+  rw [q, hq, c_r_cuberoot]
 end
+
 end
 
 section
@@ -1027,7 +1027,7 @@ begin
   have habc : (1 : ℤ/3ℤ) + 1 + 1 = 0, from rfl,
   have hcard : fintype.card ℤ/3ℤ = 3, from zmodp.card_zmodp three_prime,
   have hone : (1 : ℤ/3ℤ) ≠ 0, from dec_trivial,
-  cases @theorem_13_17 (ℤ/3ℤ) _ _ hcard _ _ _ hone habc with B hB,
+  cases theorem_13_17 hcard hone habc with B hB,
   use B,
   intros n A hxyz,
   apply hB,
