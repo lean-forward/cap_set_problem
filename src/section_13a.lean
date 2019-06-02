@@ -13,7 +13,7 @@ It corresponds to the first part of section 13 of our blueprint.
 
 import tactic.linarith
 import data.polynomial
-import analysis.exponential
+import analysis.complex.exponential
 
 variables {α : Type*} {β : Type*} {γ : Type*}
 

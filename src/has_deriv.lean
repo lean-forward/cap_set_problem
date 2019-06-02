@@ -18,6 +18,13 @@ lemma is_bounded_linear_map_mul_const (r : ℝ) : is_bounded_linear_map ℝ ((*)
 show is_bounded_linear_map ℝ (λx:ℝ, r • x), from
   is_bounded_linear_map.smul _ is_bounded_linear_map.id
 
+noncomputable def mul_const_bounded_linear_map (r : ℝ) : ℝ →L[ℝ] ℝ :=
+(is_bounded_linear_map_mul_const r).to_bounded_linear_map
+
+@[simp] lemma mul_const_bounded_linear_map_apply (r x : ℝ) :
+  mul_const_bounded_linear_map r x = r * x :=
+rfl
+
 open asymptotics
 
 section
@@ -32,8 +39,8 @@ by convert this; funext; rw mul_one
 
 end
 
-def has_deriv (f : ℝ → ℝ) (f' : ℝ) (x : ℝ) :=
-has_fderiv_at ℝ f ((*) f') x
+def has_deriv (f : ℝ → ℝ) (f' : ℝ) (x : ℝ) : Prop :=
+has_fderiv_at f (mul_const_bounded_linear_map f') x --((*) f') x
 
 lemma has_deriv.congr₂ {f : ℝ → ℝ} {f' f'' x : ℝ} (eq : f' = f'') (h : has_deriv f f' x) :
   has_deriv f f'' x :=
@@ -47,15 +54,15 @@ lemma has_deriv_id (x : ℝ) : has_deriv (λx, x) 1 x :=
 
 lemma has_deriv.add {x : ℝ} {f g : ℝ → ℝ} {f' g' : ℝ}
   (hf : has_deriv f f' x) (hg : has_deriv g g' x) : has_deriv (λx, f x + g x) (f' + g') x :=
-(has_fderiv_at_add hf hg).congr (assume x, rfl) (assume x, (add_mul _ _ _).symm)
+(hf.add hg).congr (assume x, rfl) (assume x, (add_mul _ _ _).symm)
 
 lemma has_deriv.sub {x : ℝ} {f g : ℝ → ℝ} {f' g' : ℝ}
   (hf : has_deriv f f' x) (hg : has_deriv g g' x) : has_deriv (λx, f x - g x) (f' - g') x :=
-(has_fderiv_at_sub hf hg).congr (assume x, rfl) (assume x, (sub_mul _ _ _).symm)
+(hf.sub hg).congr (assume x, rfl) $ λ x, by simp; ring
 
 lemma has_deriv.neg {x : ℝ} {f : ℝ → ℝ} {f' : ℝ} (hf : has_deriv f f' x) :
   has_deriv (λx, - f x) (- f') x :=
-(has_fderiv_at_neg hf).congr (assume x, rfl) (assume x, neg_mul_eq_neg_mul _ _)
+(hf.neg).congr (assume x, rfl) $ λ x, by simp; ring
 
 lemma has_deriv_finset_sum {α : Type*} {x : ℝ} {f : α → ℝ → ℝ} {f' : α → ℝ}
   (s : finset α) (hf : ∀a, has_deriv (f a) (f' a) x) :
@@ -70,12 +77,19 @@ begin
     exact (hf a).add ih }
 end
 
+#check bounded_linear_map
+
 lemma has_deriv.mul {f g : ℝ → ℝ} {f' g' : ℝ} {x : ℝ}
   (hf : has_deriv f f' x) (hg : has_deriv g g' x) :
   has_deriv (λx, f x * g x) (f x * g' + f' * g x) x :=
 begin
   let D := λ(f : ℝ → ℝ) (f' x' : ℝ), (f x' - f x) - f' * (x' - x),
-  refine ⟨is_bounded_linear_map_mul_const _, _⟩,
+  unfold has_deriv,
+  convert has_fderiv_at.mul hf hg,
+  admit
+end
+
+/-   refine ⟨is_bounded_linear_map_mul_const _, _⟩,
   simp only [add_mul],
   rw show
     (λx', f x' * g x' - f x * g x - (f x * g' * (x' - x) + f' * g x * (x' - x))) =
@@ -104,7 +118,7 @@ begin
       rw [sub_self] at this,
       rwa [eq] },
     { assume x h, rw [h, zero_mul] } }
-end
+end -/
 
 lemma has_deriv.mul_left {f : ℝ → ℝ} {f' : ℝ} {x : ℝ} (c : ℝ) (hf : has_deriv f f' x) :
   has_deriv (λx, c * f x) (c * f') x :=
@@ -118,32 +132,31 @@ lemma has_deriv.pow {f : ℝ → ℝ} {f' : ℝ} {x : ℝ} (hf : has_deriv f f' 
 | (n + 1 + 1) :=
   begin
     refine (hf.mul (has_deriv.pow (n + 1))).congr (assume x, rfl) (assume x, _),
-    simp only [nat.add_sub_cancel],
-    simp only [add_mul, mul_add, pow_add, pow_one, one_mul, add_comm, pow_one,
-      nat.cast_add, nat.cast_one],
+    simp only [mul_const_bounded_linear_map_apply, nat.add_sub_cancel, nat.cast_add, nat.cast_one],
+    simp only [add_mul, mul_add, pow_add, pow_one, one_mul, add_comm, pow_one],
     ac_refl
   end
 
 lemma increasing_of_deriv_zero_pos (f : ℝ → ℝ) (f' : ℝ) (hf : has_deriv f f' 0) (hf' : f' > 0) :
   ∃ε>0, ∀x, 0 < x → x < ε → f 0 < f x :=
 begin
-  have := (has_fderiv_at_filter_iff_tendsto.1 hf).2,
+  have := (has_fderiv_at_filter_iff_tendsto.1 hf),
   simp only [sub_zero, (norm_inv _).symm, (normed_field.norm_mul _ _).symm] at this,
-  rw [← @tendsto_zero_iff_norm_tendsto_zero ℝ ℝ ℝ, metric.tendsto_nhds_nhds] at this,
+  rw [← @tendsto_zero_iff_norm_tendsto_zero ℝ ℝ, metric.tendsto_nhds_nhds] at this,
   specialize this f' hf',
   rcases this with ⟨ε, hε, h⟩,
   refine ⟨ε, hε, assume x hx0 hxε, _⟩,
   have : dist x 0 < ε,
   { rwa [dist_zero_right, real.norm_eq_abs, abs_of_pos hx0] },
   specialize @h x this,
-  rw [dist_zero_right, mul_comm f', mul_sub, ← mul_assoc, inv_mul_cancel (ne_of_gt hx0), one_mul,
+  rw [mul_const_bounded_linear_map_apply, dist_zero_right, mul_comm f', mul_sub, ← mul_assoc, inv_mul_cancel (ne_of_gt hx0), one_mul,
     norm_sub_rev, real.norm_eq_abs, abs_sub_lt_iff, sub_lt_self_iff] at h,
   exact (sub_pos.1 $ pos_of_mul_pos_left h.1 $ inv_nonneg.2 $ le_of_lt $ hx0)
 end
 
 lemma decreasing_of_fderiv_pos (f : ℝ → ℝ) (f' : ℝ) (x : ℝ) (hf : has_deriv f f' x) (hf' : 0 < f') :
   ∃ε>0, ∀y, x - ε < y → y < x → f y < f x :=
-begin
+/- begin
   have : has_fderiv_at ℝ (λx':ℝ, - (f ∘ (λx', x - x')) x') ((*) f') 0,
   { rw show ((*) f') = (λx', - (((*) f') ∘ (λx', 0 - x')) x'),
       by funext x; dsimp only [(∘)]; rw [mul_sub, mul_zero, zero_sub, neg_neg],
@@ -157,4 +170,5 @@ begin
   specialize h (x - y),
   simp [-sub_eq_add_neg, sub_sub_cancel, sub_zero] at h,
   refine h hyx (sub_lt.2 hyε)
-end
+end -/
+sorry

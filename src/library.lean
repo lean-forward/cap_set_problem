@@ -12,7 +12,7 @@ to mathlib as we have time.
 
 import data.mv_polynomial data.matrix
 import linear_algebra.finsupp linear_algebra.matrix
-import topology.instances.real analysis.exponential
+import topology.instances.real --analysis.exponential
 import field_theory.finite field_theory.mv_polynomial
 
 open lattice function
@@ -111,8 +111,14 @@ namespace finsupp
 
 lemma sum_matrix {α β γ₁ γ₂ δ} [semiring δ] [fintype γ₁] [fintype γ₂] [has_zero β] (f : α →₀ β)
   (m : α → β → matrix γ₁ γ₂ δ) (g1 : γ₁) (g2 : γ₂) : f.sum m g1 g2 = f.sum (λ a b, m a b g1 g2) :=
-calc f.sum m g1 g2 = f.sum (λ a b, m a b g1) g2 : congr_fun (eq.symm $ @finset.sum_hom _ _ _ _ _ _ _ (λ x : matrix γ₁ γ₂ δ, x g1) begin constructor, refl, intros, refl end) g2
-               ... = f.sum (λ a b, m a b g1 g2) : eq.symm $ @finset.sum_hom _ _ _ _ _ _ _ (λ x : γ₂ → δ, x g2) begin constructor, refl, intros, refl end
+calc f.sum m g1 g2 = f.sum (λ a b, m a b g1) g2 :
+   congr_fun (eq.symm $ @finset.sum_hom _ _ _ _ _ _ _ (λ x : matrix γ₁ γ₂ δ, x g1)
+      begin convert is_add_monoid_hom.mk _,
+        {constructor, intros, refl},
+         refl end) g2
+               ... = f.sum (λ a b, m a b g1 g2) :
+   eq.symm $ @finset.sum_hom _ _ _ _ _ _ _ (λ x : γ₂ → δ, x g2)
+      begin convert is_add_monoid_hom.mk _, {constructor, intros, refl}, refl end
 
 lemma sum_matrix_to_lin
   {α β γ₁ γ₂ δ} [comm_ring δ] [fintype γ₁] [fintype γ₂] [has_zero β] (f : α →₀ β)
@@ -228,7 +234,7 @@ begin
     rcases finset.mem_image.1 (finset.mem_of_mem_inter_left hx) with ⟨y, _, hy⟩,
     have hxn : x.val = n, from fin.veq_of_eq (finset.mem_singleton.1 (finset.mem_of_mem_inter_right hx)),
     have hxy : y.val = x.val, from fin.veq_of_eq hy,
-    linarith using [y.is_lt] }
+    linarith [y.is_lt] }
 end
 
 lemma vector.vec_one {α} : ∀ v : vector α 1, v = v.head::vector.nil

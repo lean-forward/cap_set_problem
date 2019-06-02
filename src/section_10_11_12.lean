@@ -491,7 +491,7 @@ by rw [finset.card_univ_diff, fintype.card_fin_arrow, neg_cA_card,
 theorem lemma_12_2 :  q^n + V_dim ≥ m d + A.card :=
 have V_dim + (finset.univ \ neg_cA).card ≥ m d,
   from lemma_9_2 _ _ V_dim_finite,
-by linarith using [diff_card_comp]
+by linarith [diff_card_comp]
 
 omit h_a_ne_zero
 
@@ -541,7 +541,7 @@ lemma_9_2 V' P_sig (zero_set_subspace_dim _ _ V_dim_finite)
 theorem lemma_12_3 : P_sig.card ≥ V_dim :=
 le_of_not_gt $
 assume hlt : P_sig.card < V_dim,
-have W_dim > 0, by linarith using [W_dim_ge],
+have W_dim > 0, by linarith [W_dim_ge],
 let ⟨Q, hQW, hQ⟩ := exists_mem_ne_zero_of_dim_pos (cardinal.pos_of_to_nat_pos this) in
 have hPQ : ∀ x ∈ P_sig, (P + Q).eval x ≠ 0, from
   assume x hxP_sig,
@@ -656,8 +656,8 @@ lemma monom_exps_M'_card_m (k : ℚ) : ((M' k).image monom_exps).card = m k :=
 by rw [monom_exps_M'_card, M'_card]
 
 lemma B_C_disjoint : disjoint l125_B l125_C :=
-λ x hx, by linarith using [(finset.mem_filter.1 (finset.mem_of_mem_inter_left hx)).2,
-                           (finset.mem_filter.1 (finset.mem_of_mem_inter_right hx)).2]
+λ x hx, by linarith [(finset.mem_filter.1 (finset.mem_of_mem_inter_left hx)).2,
+                     (finset.mem_filter.1 (finset.mem_of_mem_inter_right hx)).2]
 
 lemma B_C_union : l125_B ∪ l125_C = l125_A :=
 finset.ext.2 $ λ x,
@@ -765,7 +765,7 @@ by linarith
 
 include h_A hd h_a_ne_zero h_sum d_nonneg
 theorem lemma_12_6 : A.card ≤ 2 * m (d/2) + m ((q - 1)*n - d) :=
-by linarith using [lemma_12_2, lemma_12_3, lemma_12_4, lemma_12_5]
+by linarith [lemma_12_2, lemma_12_3, lemma_12_4, lemma_12_5]
 
 end
 

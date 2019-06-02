@@ -12,7 +12,6 @@ It corresponds to the second half of section 13 of our blueprint.
 -/
 
 import data.vector2 data.zmod.basic data.nat.modeq
-import analysis.exponential
 import tactic.library_search
 import
   section_10_11_12
@@ -213,9 +212,11 @@ begin
   rw ←hoeq,
   apply finset.sum_hom (λ p, polynomial.coeff p n),
   apply_instance,
-  constructor,
-  { apply polynomial.coeff_zero },
-  { intros, apply polynomial.coeff_add }
+  convert is_add_monoid_hom.mk _,
+  { convert is_add_hom.mk _,
+    intros,
+    apply polynomial.coeff_add },
+  { apply polynomial.coeff_zero }
 end
 
 lemma one_coeff_poly_coeff_lt {n : ℕ} (h : n < q): one_coeff_poly.coeff n = 1 :=
@@ -484,12 +485,12 @@ begin
       { exact ish } },
     { exact hr },
     { congr, ext i,
-      dsimp only [polynomial.eval],
-      rw [polynomial.eval₂_map coe],
-      refl,
-      exact ish } },
+      unfold polynomial.eval,
+      rw [polynomial.eval₂_map coe id], congr,
+      { apply_instance },
+      { constructor; simp } } }, -- why does apply_instance time out?
   { exact ish },
-  linarith using [@one_le_q α _ _]
+  linarith [@one_le_q α _ _]
 end
 
 lemma cf_rw_two {r : ℝ} (hr : r > 0) (i : ℕ) :
@@ -956,7 +957,7 @@ begin
     rw [mul_inv_cancel] at h,
     { simpa using h },
     { norm_num } },
-  { linarith using [crq_ge_one r_pos (le_of_lt r_lt_one) (show 1 ≤ 3, by norm_num)] }
+  { linarith [crq_ge_one r_pos (le_of_lt r_lt_one) (show 1 ≤ 3, by norm_num)] }
 end
 
 lemma c_r_q_pos : crq r 3 > 0 :=
@@ -968,7 +969,7 @@ by rw [←this, real.sqrt_lt]; norm_num
 
 lemma c_r_cubed_bound : (crq r 3)^3 ≤ 22 :=
 begin
-  have : (207 + 33*real.sqrt 33) ≤ 405, { linarith using [sqrt_33_lt_6] },
+  have : (207 + 33*real.sqrt 33) ≤ 405, { linarith [sqrt_33_lt_6] },
   suffices : crq r 3^3 ≤ (3/8)^3 * 405, { apply le_trans this; norm_num },
   rw c_r_cubed,
   apply mul_le_mul (le_refl _),
@@ -979,7 +980,7 @@ begin
 end
 
 lemma one_minus_r_bound : 1 - r > 1/3 :=
-by rw r; linarith using [sqrt_33_lt_6]
+by rw r; linarith [sqrt_33_lt_6]
 
 lemma r_bound : (3 * crq r 3 ^ 2) / (1 - r) ≤ 198 :=
 have h : (3 * crq r 3 ^ 2) ≤ 66, from calc
