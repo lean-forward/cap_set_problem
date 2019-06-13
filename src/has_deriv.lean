@@ -77,48 +77,14 @@ begin
     exact (hf a).add ih }
 end
 
-#check bounded_linear_map
-
 lemma has_deriv.mul {f g : ℝ → ℝ} {f' g' : ℝ} {x : ℝ}
   (hf : has_deriv f f' x) (hg : has_deriv g g' x) :
   has_deriv (λx, f x * g x) (f x * g' + f' * g x) x :=
 begin
-  let D := λ(f : ℝ → ℝ) (f' x' : ℝ), (f x' - f x) - f' * (x' - x),
   unfold has_deriv,
   convert has_fderiv_at.mul hf hg,
-  admit
+  ext, dsimp, ring
 end
-
-/-   refine ⟨is_bounded_linear_map_mul_const _, _⟩,
-  simp only [add_mul],
-  rw show
-    (λx', f x' * g x' - f x * g x - (f x * g' * (x' - x) + f' * g x * (x' - x))) =
-    (λx', f x * D g g' x' + D f f' x' * g x' + f' * ((x' - x) * (g x' - g x))),
-  { funext x', simp only [D], ring },
-  refine is_o.add (is_o.add (is_o_const_mul_left hg.is_o _) _) _,
-  { refine is_o_mul_right_one hf.is_o _,
-    rcases metric.tendsto_nhds_nhds.1 hg.continuous_at 1 zero_lt_one with ⟨δ, hδ, h⟩,
-    refine ⟨∥g x∥ + 1, add_pos_of_nonneg_of_pos (norm_nonneg _) zero_lt_one,
-      metric.mem_nhds_iff.2 ⟨δ, hδ, assume y hy, _⟩⟩,
-    specialize h hy,
-    simp only [set.mem_set_of_eq, norm_one, mul_one],
-    rw [dist_eq_norm] at h,
-    calc ∥g y∥ = ∥g x + (g y - g x)∥ : by rw [add_sub_cancel'_right]
-      ... ≤ ∥g x∥ + ∥g y - g x∥ : norm_triangle _ _
-      ... ≤ ∥g x∥ + 1 : add_le_add_left (le_of_lt h) _ },
-  { refine is_o_const_mul_left _ _,
-    rw is_o_iff_tendsto,
-    { have : tendsto (λx', g x' - g x) (nhds x) (nhds (g x - g x)) :=
-        tendsto_sub hg.continuous_at (@tendsto_const_nhds ℝ _ _ (g x) (nhds x)),
-      have eq : (λx', (x' - x) * (g x' - g x) / (x' - x)) = (λx', g x' - g x),
-      { funext x',
-        by_cases x = x',
-        { simp [h] },
-        { rw [mul_div_cancel_left], rwa [(≠), sub_eq_zero, eq_comm] } },
-      rw [sub_self] at this,
-      rwa [eq] },
-    { assume x h, rw [h, zero_mul] } }
-end -/
 
 lemma has_deriv.mul_left {f : ℝ → ℝ} {f' : ℝ} {x : ℝ} (c : ℝ) (hf : has_deriv f f' x) :
   has_deriv (λx, c * f x) (c * f') x :=
@@ -156,19 +122,22 @@ end
 
 lemma decreasing_of_fderiv_pos (f : ℝ → ℝ) (f' : ℝ) (x : ℝ) (hf : has_deriv f f' x) (hf' : 0 < f') :
   ∃ε>0, ∀y, x - ε < y → y < x → f y < f x :=
-/- begin
-  have : has_fderiv_at ℝ (λx':ℝ, - (f ∘ (λx', x - x')) x') ((*) f') 0,
-  { rw show ((*) f') = (λx', - (((*) f') ∘ (λx', 0 - x')) x'),
-      by funext x; dsimp only [(∘)]; rw [mul_sub, mul_zero, zero_sub, neg_neg],
-    refine has_fderiv_at_neg _,
-    dsimp only,
-    refine has_fderiv_at.comp (has_fderiv_at_sub (has_fderiv_at_const _ _) (has_fderiv_at_id _)) _,
-    rw sub_zero,
-    exact hf },
+begin
+  have : mul_const_bounded_linear_map (-f') = bounded_linear_map.comp (mul_const_bounded_linear_map (f')) (mul_const_bounded_linear_map (-1)),
+  { ext x, show -f' * x = f' * (-1 * x), simp },
+  have : has_deriv (λx':ℝ, - (f ∘ (λy, x - y)) x') (f') 0,
+  { convert @has_deriv.neg _ _ (-f') _ using 1,
+    { rw neg_neg },
+    { unfold has_deriv at hf ⊢, dsimp, rw ←sub_zero x at hf,
+      convert @has_fderiv_at.comp _ _ _ _ _ _ _ _ (has_sub.sub x) _ _ f _ hf _,
+      { convert has_deriv.sub _ _,
+        { show (-1 : ℝ) = 0 - 1, norm_num },
+        { apply has_deriv_const },
+        { apply has_deriv_id } } } },
   rcases increasing_of_deriv_zero_pos _ _ this hf' with ⟨ε, hε, h⟩,
   refine ⟨ε, hε, assume y hyε hyx, _⟩,
   specialize h (x - y),
   simp [-sub_eq_add_neg, sub_sub_cancel, sub_zero] at h,
   refine h hyx (sub_lt.2 hyε)
-end -/
-sorry
+end
+
