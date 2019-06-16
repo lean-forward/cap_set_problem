@@ -20,7 +20,7 @@ theorem cap_set_problem : ∃ B : ℝ,
 
 theorem cap_set_problem_specific (n : ℕ) {A : finset (fin n → ℤ/3ℤ)}
   (hxyz : ∀ x y z : fin n → ℤ/3ℤ, x ∈ A → y ∈ A → z ∈ A → x + y + z = 0 → x = y ∧ x = z) :
-  ↑A.card ≤ 198 * ((((3 : ℝ) / 8)^3 * (207 + 33*real.sqrt 33))^(1/3 : ℝ))^n
+  ↑A.card ≤ 3 * ((((3 : ℝ) / 8)^3 * (207 + 33*real.sqrt 33))^(1/3 : ℝ))^n
 ```
 
 All three are found in `section_1b.lean`.

@@ -17,7 +17,6 @@ import
   section_10_11_12
   has_deriv
 
-
 def iseg (q j) : finset (fin q) :=
 finset.univ.filter (λ k, k.val ≤ j)
 
@@ -312,7 +311,6 @@ lemma sum_fin_fn_of_vector : ∀ {n} (v : vector (fin q) n), fin.sum (↑(fin_fn
         rw nat.succ_sub; [refl, exact nat.le_of_lt_succ x.is_lt] } }
    end
 
-
 lemma inv_in_range {d : ℚ} (hd : 0 ≤ d) {n} {v : vector (fin q) n}
   (hv : v ∈ (finset.range (int.nat_abs ⌊d⌋ + 1)).bind (sf n)) :
   ↑(fin.sum (↑(fin_fn_of_vector v) : fin n → ℕ)) ≤ d :=
@@ -332,7 +330,6 @@ end
 lemma nat_sum_vector_of_fin_fn : ∀ {n} (v : fin n → fin q), (vector_of_fin_fn v).nat_sum = fin.sum (↑v : fin n → ℕ)
 | 0 v := by simp [vector_of_fin_fn, fin.sum_zero]
 | (n+1) v := by simp [vector_of_fin_fn, nat_sum_vector_of_fin_fn, fin.sum_succ]; refl
-
 
 lemma vector_of_fin_fn_mem_bind {n} {d : ℚ}
   {v : fin n → fin q} (hv : ↑(fin.sum (↑v : fin n → ℕ)) ≤ d) :
@@ -365,7 +362,6 @@ lemma vector_of_fin_fn_inj : ∀ {n} {v1 v2 : fin n → fin q}, vector_of_fin_fn
     { have hxn : x = ⟨n, nat.lt_succ_self _⟩, from fin.eq_of_veq (nat.eq_of_lt_succ_of_not_lt x.is_lt hx),
       rw hxn, apply vector.cons_inj_left h }
   end
-
 
 end fix_q
 
@@ -508,7 +504,6 @@ calc _ ≤ ((one_coeff_poly q)^n).eval₂ coe r / r^e : (le_div_iff (pow_pos hr 
    ... = ((one_coeff_poly q)^n).eval₂ coe r / (r^(((q - 1 : ℝ)) / 3))^n : begin rw [←real.rpow_nat_cast _ n, ←real.rpow_mul], {congr, ring}, {exact le_of_lt hr} end
    ... = ((one_coeff_poly q).eval₂ coe r / (r^(((q - 1 : ℝ)) / 3)))^n : begin rw [polynomial.eval₂_pow, ←div_pow], apply ne_of_gt, apply real.rpow_pos_of_pos hr end
 
-
 end
 
 lemma one_coeff_poly_eval_ge_one {r : ℝ} {q : ℕ} (hr : 0 ≤ r) (hq : 1 ≤ q) :
@@ -639,7 +634,6 @@ by apply (le_div_iff _).2; linarith
 
 lemma finset.card_le_card_univ {α} [fintype α] [decidable_eq α] (A : finset α) : A.card ≤ (@finset.univ α _).card :=
 finset.card_le_card_of_inj_on id (λ _ _, finset.mem_univ _) $ by simp
-
 
 section
 set_option class.instance_max_depth 200
