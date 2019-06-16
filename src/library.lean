@@ -12,7 +12,7 @@ to mathlib as we have time.
 
 import data.mv_polynomial data.matrix
 import linear_algebra.finsupp linear_algebra.matrix
-import topology.instances.real --analysis.exponential
+import topology.instances.real analysis.complex.exponential
 import field_theory.finite field_theory.mv_polynomial
 
 open lattice function
@@ -22,6 +22,32 @@ open lattice set linear_map submodule
 lemma nat.sub_eq_sub_iff {a b c : ℕ} (h1 : a ≤ c) (h2 : b ≤ c) : c - a = c - b ↔ a = b :=
 by rw [nat.sub_eq_iff_eq_add h1, ← nat.sub_add_comm h2, eq_comm,
   nat.sub_eq_iff_eq_add (le_add_right h2), add_left_cancel_iff]
+
+namespace polynomial
+
+theorem poly_eq_deg_sum {α β} [comm_semiring α] [decidable_eq α] [semiring β] (p : polynomial α)
+  {f : α → β} (hf : ∀ x, x = 0 → f x = 0) (b : β) :
+  (finset.range (p.nat_degree+1)).sum (λ j, f (p.coeff j) * b^j) = p.eval₂ f b :=
+begin
+  fapply finset.sum_bij_ne_zero,
+  { intros a _ _, exact a },
+  { intros a h1 h2,
+    dsimp,
+    rw [finsupp.mem_support_iff],
+    apply mt (hf _),
+    exact ne_zero_of_mul_ne_zero_right h2 },
+  { intros, assumption },
+  { dsimp, intros a ha hane,
+    have : a ∈ finset.range (p.nat_degree + 1),
+    { rw [finset.mem_range],
+      refine nat.lt_succ_of_le (le_nat_degree_of_ne_zero _),
+      apply mt (hf _),
+      exact ne_zero_of_mul_ne_zero_right hane },
+    use [a, this, hane, rfl] },
+  { intros, refl }
+end
+
+end polynomial
 
 namespace cardinal
 
@@ -270,3 +296,17 @@ lemma vector.cons_inj_left {α n} : ∀ {i j} {v w : vector α n} (h : i::v = j:
 | _ _ ⟨_::_,_⟩ ⟨_::_,_⟩ h := by cases subtype.ext.1 h; refl
 
 end vector_sum
+
+namespace real
+
+lemma rpow_le {a b c : ℝ} (ha : 0 < a) (ha2 : a ≤ 1) (hbc : b ≤ c) : a^c ≤ a^b :=
+begin
+  rw ←one_mul (a^b),
+  apply le_mul_of_div_le,
+  { exact real.rpow_pos_of_pos ha _ },
+  { rw [div_eq_mul_inv, ←real.rpow_neg, ←real.rpow_add _ _ ha],
+    apply real.rpow_le_one,
+    all_goals {linarith} }
+end
+
+end real

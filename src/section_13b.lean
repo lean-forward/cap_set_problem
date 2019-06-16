@@ -404,6 +404,25 @@ begin
     simpa using hx }
 end
 
+/- lemma one_coeff_poly_pow_support (q n : ℕ) :
+  finsupp.support ((one_coeff_poly q)^n : polynomial ℕ) = finset.range (q*n) :=
+begin
+  ext x,
+  split,
+  { intro hx,
+    have hlc : (one_coeff_poly q).leading_coeff ≠ 0, from sorry,
+    have hlc' : (one_coeff_poly q).leading_coeff^n ≠ 0, from sorry,
+    have hdeg : ((one_coeff_poly q)^n).nat_degree = n * (one_coeff_poly q).nat_degree,
+    { apply polynomial.nat_degree_pow_eq',
+      simpa using hlc' },
+    rw finset.mem_range,
+    rw finsupp.mem_support_iff at hx,
+    apply lt_of_not_ge,
+    intro hx',
+    apply hx,
+     }
+end -/
+
 lemma finset.sup_range (n : ℕ) : @finset.sup (with_bot ℕ) _ _ (finset.range (n+1)) some = some n :=
 le_antisymm
   (finset.sup_le $ λ b hb, by simp at hb ⊢; apply nat.le_of_lt_succ hb)
@@ -463,6 +482,74 @@ begin
   rw [←hbc, hse, finset.card_bind], refl,
   intros _ _ _ _, apply sf_disjoint
 end
+
+lemma int.cast_nat_abs {z : ℤ} (hz : 0 ≤ z) : (z.nat_abs : ℝ) = z :=
+by norm_cast; exact int.nat_abs_of_nonneg hz
+
+lemma one_coeff_poly_pow_eval₂_nonneg {r : ℝ} (hr : 0 ≤ r) (k) : 0 ≤ polynomial.eval₂ coe r (one_coeff_poly k ^ n) :=
+begin
+  rw polynomial.eval₂_pow,
+  apply pow_nonneg,
+  apply one_coeff_poly_eval₂_nonneg,
+  { exact nat.cast_nonneg },
+  { assumption }
+end
+
+lemma finset_sum_range {r : ℝ} (hr : 0 < r) (hr2 : r < 1) :
+  (finset.range ((q - 1) * n + 1)).sum (λ (j : ℕ), r ^ j * ↑(cf q n j)) =
+     ((one_coeff_poly q) ^ n).eval₂ coe r :=
+begin
+  convert polynomial.poly_eq_deg_sum _ _ _,
+  { rw one_coeff_poly_pow_nat_degree _ q_pos },
+  { ext, rw [lemma_13_9, mul_comm], exact q_pos },
+  { simp }
+end
+
+theorem theorem_14_1 {r : ℝ} (hr : 0 < r) (hr2 : r < 1) : ↑(m (((q : ℚ)- 1)*n / 3)) ≤ (crq r q) ^ n :=
+let e := ⌊((q - 1 : ℝ))*n / 3⌋.nat_abs in
+have hpos : ((q - 1 : ℝ))*n / 3 ≥ 0, from div_nonneg (mul_nonneg (sub_nonneg_of_le (by exact_mod_cast one_le_q)) (nat.cast_nonneg _)) (by norm_num),
+have r^e * m (((q : ℚ)- 1)*n / 3) = (finset.range (e+1)).sum (λ j, r^e * cf q n j),
+begin
+  rw [lemma_13_8, ←finset.sum_hom coe, finset.mul_sum],
+  { congr' 2, dsimp [e], congr' 2, rw ←@rat.cast_floor ℝ _ _ (((q : ℚ) + -1) * n /3), simp },
+  { apply_instance },
+  { assumption_mod_cast }
+end,
+have hmr : ∀ x, x ∈ finset.range (e + 1) → x < (q-1)*n + 1, from λ x hx,
+begin
+  dsimp only [e] at hx,
+  have hx' := finset.mem_range.1 hx,
+  apply lt_of_lt_of_le hx',
+  apply nat.succ_le_succ,
+  suffices : (int.nat_abs ⌊((q : ℝ) -1)*n / 3⌋ : ℝ) ≤ ↑((q-1)*n), from nat.cast_le.1 this,
+  rw int.cast_nat_abs,
+  { apply le_trans,
+    { apply floor_le },
+    { apply (div_le_iff _).2,
+      convert le_mul_of_ge_one_right _ _,
+      { simp [one_le_q], },
+      { apply mul_nonneg,
+        { apply sub_nonneg_of_le, exact_mod_cast one_le_q },
+        { apply nat.cast_nonneg } },
+      repeat { norm_num } } },
+  rw floor_nonneg,
+  exact hpos
+end,
+have r^e * m (((q : ℚ)- 1)*n / 3) ≤ ((one_coeff_poly q)^n).eval₂ coe r, from calc
+     _ = (finset.range (e+1)).sum (λ j, r^e * cf q n j) : this
+   ... ≤ (finset.range (e+1)).sum (λ j, r^j * cf q n j) : finset.sum_le_sum $ λ x hx,mul_le_mul_of_nonneg_right (pow_le_pow_of_le_one (le_of_lt hr) (le_of_lt hr2) (by linarith [finset.mem_range.1 hx])) (nat.cast_nonneg _)
+   ... ≤  (finset.range ((q - 1) * n + 1)).sum (λ j, r^j * cf q n j) : finset.sum_le_sum_of_subset_of_nonneg (λ x hx, finset.mem_range.2 (hmr _ hx)) $
+            λ x hx1 hx2, mul_nonneg (pow_nonneg (le_of_lt hr) _) (nat.cast_nonneg _)
+   ... = ((one_coeff_poly q)^n).eval₂ coe r : finset_sum_range _ hr hr2,
+calc _ ≤ ((one_coeff_poly q)^n).eval₂ coe r / r^e : (le_div_iff (pow_pos hr _)).2 (by convert this using 1; apply mul_comm)
+   ... ≤ ((one_coeff_poly q)^n).eval₂ coe r / r^(((q - 1 : ℝ))*n / 3) : div_le_div_of_le_left
+         (one_coeff_poly_pow_eval₂_nonneg _ (le_of_lt hr) _)
+         (pow_pos hr _)
+         (real.rpow_pos_of_pos hr _)
+         begin rw ←real.rpow_nat_cast, apply real.rpow_le hr (le_of_lt hr2), dsimp [e], rw int.cast_nat_abs, apply floor_le, apply floor_nonneg.2 hpos end
+   ... = ((one_coeff_poly q)^n).eval₂ coe r / (r^(((q - 1 : ℝ)) / 3))^n : begin rw [←real.rpow_nat_cast _ n, ←real.rpow_mul], {congr, ring}, {exact le_of_lt hr} end
+   ... = ((one_coeff_poly q).eval₂ coe r / (r^(((q - 1 : ℝ)) / 3)))^n : begin rw [polynomial.eval₂_pow, ←div_pow], apply ne_of_gt, apply real.rpow_pos_of_pos hr end
+
 
 section
 variable (j : ℕ)
@@ -722,7 +809,7 @@ begin
       { apply le_of_lt, apply nat.mod_lt, exact dec_trivial } } }
 end
 
-theorem theorem_13_13 {r : ℝ} (hr : 0 < r) (hr2 : r < 1) :
+/- theorem theorem_13_13 {r : ℝ} (hr : 0 < r) (hr2 : r < 1) :
   ↑(m n ((q - 1)*n / 3)) ≤ ((crq r q)^2 / (1 - r)) * (crq r q)^n :=
 let ⟨i, hi, ⟨N', hN'⟩⟩ := exists_div_three n,
     n' := n + i in
@@ -743,6 +830,7 @@ calc ↑(m n ((q - 1)*n / 3))
  ... = 1/(1-r) * ((crq r q)^2 * (crq r q)^n) : by rw [←pow_add, add_comm]
  ... = ((crq r q)^2 / (1 - r)) * (crq r q)^n : by rw [←mul_assoc, mul_comm (1/(1-r)), ←mul_div_assoc, mul_one]
 
+end -/
 end
 
 lemma crq_eq (r : ℝ) (q : ℕ) :
@@ -849,26 +937,24 @@ variables {α : Type} [discrete_field α] [fintype α] {n : ℕ} {a b c : α} (h
 include hc habc hall
 local notation `q` := @q α _ _
 
-
-theorem theorem_13_14 {r : ℝ} (hr : 0 < r) (hr2 : r < 1) :
-  ↑A.card ≤ ((3 * (crq r q)^2)/(1 - r)) * (crq r q)^n :=
+theorem theorem_13_14 {r : ℝ} (hr : 0 < r) (hr2 : r < 1) : ↑A.card ≤ 3 * (crq r q)^n :=
 if hn : n = 0 then
-  have hcu : (@finset.univ (fin n → α) _).card = 1,
+   have hcu : (@finset.univ (fin n → α) _).card = 1,
     by { convert finset.card_univ, rw hn, refl },
   have hac : A.card ≤ 1, by { convert finset.card_le_card_univ _, {exact eq.symm hcu}, {apply_instance}},
   have hac : (A.card : ℝ) ≤ 1, from suffices (A.card : ℝ) ≤ (1 : ℕ), by simpa, nat.cast_le.2 hac,
-  le_trans hac (by rw [hn, pow_zero, mul_one]; exact coeff_ge_one hr hr2 one_le_q)
+  le_trans hac (by rw [hn, pow_zero, mul_one]; norm_num)
 else have hn : n > 0, from nat.pos_of_ne_zero hn,
 begin
   transitivity,
   { apply nat.cast_le.2,
     apply theorem_12_1 n hc habc hn hall },
-  { rw [nat.cast_mul, mul_div_assoc, mul_assoc],
+  { rw nat.cast_mul,
     convert mul_le_mul_of_nonneg_left _ _,
-    { simp },
+    { norm_cast },
     { rw [mul_comm, ←div_eq_mul_one_div],
-      apply theorem_13_13; assumption },
-    { simp, norm_num } }
+      apply theorem_14_1; assumption },
+    { norm_num } }
 end
 
 end
@@ -886,13 +972,7 @@ begin
   rcases lemma_13_15 (q_ge_two α) with ⟨B, hB, hB2, hBr⟩,
   repeat {apply exists.intro},
   refine ⟨_, _, hBr, λ a b c n A hc habc hall, theorem_13_14 hc habc hall hB hB2⟩,
-  { apply div_pos,
-    { apply mul_pos,
-      { norm_num },
-      { apply pow_pos,
-        apply lt_of_lt_of_le zero_lt_one,
-        exact crq_ge_one hB (le_of_lt hB2) one_le_q } },
-    { exact sub_pos_of_lt hB2 } },
+  { norm_num },
   { apply lt_of_lt_of_le zero_lt_one,
     exact crq_ge_one hB (le_of_lt hB2) one_le_q }
 end
@@ -960,43 +1040,6 @@ begin
   { linarith [crq_ge_one r_pos (le_of_lt r_lt_one) (show 1 ≤ 3, by norm_num)] }
 end
 
-lemma c_r_q_pos : crq r 3 > 0 :=
-lt_of_lt_of_le zero_lt_one $ crq_ge_one r_pos (le_of_lt r_lt_one) (by norm_num)
-
-lemma sqrt_33_lt_6 : real.sqrt 33 < 6 :=
-have real.sqrt 36 = 6, by rw real.sqrt_eq_iff_sqr_eq; norm_num,
-by rw [←this, real.sqrt_lt]; norm_num
-
-lemma c_r_cubed_bound : (crq r 3)^3 ≤ 22 :=
-begin
-  have : (207 + 33*real.sqrt 33) ≤ 405, { linarith [sqrt_33_lt_6] },
-  suffices : crq r 3^3 ≤ (3/8)^3 * 405, { apply le_trans this; norm_num },
-  rw c_r_cubed,
-  apply mul_le_mul (le_refl _),
-  { exact this },
-  { refine add_nonneg _ (mul_nonneg _ _); try {norm_num},
-    apply real.sqrt_nonneg },
-  { norm_num }
-end
-
-lemma one_minus_r_bound : 1 - r > 1/3 :=
-by rw r; linarith [sqrt_33_lt_6]
-
-lemma r_bound : (3 * crq r 3 ^ 2) / (1 - r) ≤ 198 :=
-have h : (3 * crq r 3 ^ 2) ≤ 66, from calc
-  3 * crq r 3^2 ≤ 3 * crq r 3^3 : (mul_le_mul_left (by norm_num)).2
-      (pow_le_pow (crq_ge_one r_pos (le_of_lt r_lt_one) (by norm_num)) (by norm_num))
-            ... ≤ 3 * 22 : (mul_le_mul_left (by norm_num)).2 c_r_cubed_bound
-            ... = 66 : by norm_num,
-calc
-  (3 * crq r 3 ^ 2) / (1 - r) ≤ (3 * crq r 3 ^ 2) / (1/3) : le_of_lt (div_lt_div_of_pos_of_lt_of_pos
-    (by norm_num)
-    one_minus_r_bound
-    (mul_pos (by norm_num) (pow_pos c_r_q_pos _)))
-  ... ≤ 66 / (1/3) :
-    div_le_div_of_le_of_pos h (by norm_num)
-  ... = 198 : by norm_num
-
 section
 set_option class.instance_max_depth 200
 
@@ -1036,7 +1079,7 @@ end
 
 theorem cap_set_problem_specific (n : ℕ) {A : finset (fin n → ℤ/3ℤ)}
   (hxyz : ∀ x y z : fin n → ℤ/3ℤ, x ∈ A → y ∈ A → z ∈ A → x + y + z = 0 → x = y ∧ x = z) :
-  ↑A.card ≤ 198 * ((((3 : ℝ) / 8)^3 * (207 + 33*real.sqrt 33))^(1/3 : ℝ))^n :=
+  ↑A.card ≤ 3 * ((((3 : ℝ) / 8)^3 * (207 + 33*real.sqrt 33))^(1/3 : ℝ))^n :=
 have hone : (1 : ℤ/3ℤ) ≠ 0, from dec_trivial,
 have hq : @q (ℤ/3ℤ) _ _ = 3, from zmodp.card_zmodp three_prime,
 begin
@@ -1048,9 +1091,9 @@ begin
   rw hq,
   convert mul_le_mul_of_nonneg_right _ _,
   { symmetry, exact c_r_cuberoot },
-  { exact r_bound },
+  { refl },
   { apply pow_nonneg,
-    apply le_trans zero_le_one, -- c_r_q_pos
+    apply le_trans zero_le_one,
     apply crq_ge_one r_pos (le_of_lt r_lt_one),
     norm_num }
 end
