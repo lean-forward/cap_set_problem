@@ -15,8 +15,8 @@ import data.vector2 data.zmod.basic data.nat.modeq
 import tactic.library_search
 import
   section_10_11_12
-  section_13a
   has_deriv
+
 
 def iseg (q j) : finset (fin q) :=
 finset.univ.filter (λ k, k.val ≤ j)
@@ -371,22 +371,6 @@ end fix_q
 
 noncomputable def crq (r : ℝ) (q : ℕ) := ((one_coeff_poly q).eval₂ coe r) / r ^ ((q-1 : ℝ)/3)
 
-def root_index (q n j : ℕ) : ℕ := max ((q-1)*n) j + 1
-
-lemma root_index_gt_j (q n j) : root_index q n j > j :=
-nat.lt_succ_of_le $ le_max_right _ _
-
-lemma root_index_gt_qn (q n j) : root_index q n j > (q-1)*n :=
-nat.lt_succ_of_le $ le_max_left _ _
-
-lemma root_index_pos (q n j) : 0 < root_index q n j :=
-nat.succ_pos _
-
-lemma root_index_ne_zero (q n j) : root_index q n j ≠ 0 := ne_of_gt $ nat.succ_pos _
-
-lemma one_div_root_index_nonneg (q n j) : 0 ≤ 1 / (root_index q n j : ℝ) :=
-div_nonneg zero_le_one $ by simpa using root_index_pos q n j
-
 lemma one_coeff_poly_support (q : ℕ) : finsupp.support (one_coeff_poly q) = finset.range q :=
 begin
   ext x,
@@ -403,30 +387,6 @@ begin
     apply one_coeff_poly_coeff_lt,
     simpa using hx }
 end
-
-/- lemma one_coeff_poly_pow_support (q n : ℕ) :
-  finsupp.support ((one_coeff_poly q)^n : polynomial ℕ) = finset.range (q*n) :=
-begin
-  ext x,
-  split,
-  { intro hx,
-    have hlc : (one_coeff_poly q).leading_coeff ≠ 0, from sorry,
-    have hlc' : (one_coeff_poly q).leading_coeff^n ≠ 0, from sorry,
-    have hdeg : ((one_coeff_poly q)^n).nat_degree = n * (one_coeff_poly q).nat_degree,
-    { apply polynomial.nat_degree_pow_eq',
-      simpa using hlc' },
-    rw finset.mem_range,
-    rw finsupp.mem_support_iff at hx,
-    apply lt_of_not_ge,
-    intro hx',
-    apply hx,
-     }
-end -/
-
-lemma finset.sup_range (n : ℕ) : @finset.sup (with_bot ℕ) _ _ (finset.range (n+1)) some = some n :=
-le_antisymm
-  (finset.sup_le $ λ b hb, by simp at hb ⊢; apply nat.le_of_lt_succ hb)
-  (finset.le_sup $ by simp [zero_lt_one])
 
 lemma one_coeff_poly_nat_degree {q : ℕ} (hq : q > 0) : (one_coeff_poly q).nat_degree = q - 1 :=
 begin
@@ -447,23 +407,21 @@ begin
   { apply nat.sub_lt hq zero_lt_one }
 end
 
-lemma one_coeff_poly_coe_pow_nat_degree {q : ℕ} (n : ℕ) (hq : q > 0) :
-  ((one_coeff_poly q).map (coe : ℕ → ℂ)^n).nat_degree = (q-1)*n :=
-begin
-  rw [←polynomial.map_pow, polynomial.nat_degree_map', one_coeff_poly_pow_nat_degree],
-  { exact hq },
-  { apply nat.cast_injective }
-end
-
-noncomputable def root (q n j : ℕ) : ℂ := ζk ↑(root_index q n j)
-
-lemma norm_root (q n j : ℕ) : ∥root q n j∥ = 1 :=
-abs_of_uroot _
-
 section
 variables {α : Type} [discrete_field α] [fintype α] (n : ℕ)
 local notation `m` := m α n
 local notation `q` := @q α _ _
+
+lemma q_ge_two : q ≥ 2 :=
+finset.card_le_of_inj_on (λ n, if n = 0 then 0 else 1) (λ _ _, finset.mem_univ _) $ λ i j hi hj,
+  begin
+    split_ifs; simp *,
+    have hi' : i = 1,
+      from nat.eq_of_lt_succ_of_not_lt hi (not_lt_of_ge (nat.succ_le_of_lt (nat.pos_of_ne_zero h))),
+    have hj' : j = 1,
+      from nat.eq_of_lt_succ_of_not_lt hj (not_lt_of_ge (nat.succ_le_of_lt (nat.pos_of_ne_zero h_1))),
+    rwa ←hj' at hi'
+  end
 
 theorem lemma_13_8 {d : ℚ} (hd : d ≥ 0) :
   m d = (finset.range (⌊d⌋.nat_abs + 1)).sum (cf q n) :=
@@ -551,190 +509,6 @@ calc _ ≤ ((one_coeff_poly q)^n).eval₂ coe r / r^e : (le_div_iff (pow_pos hr 
    ... = ((one_coeff_poly q).eval₂ coe r / (r^(((q - 1 : ℝ)) / 3)))^n : begin rw [polynomial.eval₂_pow, ←div_pow], apply ne_of_gt, apply real.rpow_pos_of_pos hr end
 
 
-section
-variable (j : ℕ)
-
-lemma cf_rw_one {r : ℝ} (hr : r > 0) : (cf q n j : ℂ) =
-  (1/root_index q n j) * (finset.range (root_index q n j)).sum
-    (λ i, (((one_coeff_poly q)^n).eval₂ coe (r*(root q n j)^i)) / ((r^j * (root q n j)^(j*i)))) :=
-have hrnc : (root_index q n j : ℂ) ≠ 0, by simpa using root_index_ne_zero q n j,
-have ish : is_semiring_hom (coe : ℕ → ℂ), by constructor; simp,
-begin
-  rw [←lemma_13_9, ←polynomial.coeff_map coe, mul_comm],
-  apply eq_of_mul_eq_mul_right hrnc,
-  { rw [mul_assoc, one_div_mul_cancel hrnc, mul_one],
-    transitivity,
-    apply pick_out_coef,
-    { apply root_index_gt_j },
-    { rw [polynomial.map_pow coe, one_coeff_poly_coe_pow_nat_degree],
-      { apply root_index_gt_qn },
-      { exact q_pos },
-      { exact ish } },
-    { exact hr },
-    { congr, ext i,
-      unfold polynomial.eval,
-      rw [polynomial.eval₂_map coe id], congr,
-      { apply_instance },
-      { constructor; simp } } }, -- why does apply_instance time out?
-  { exact ish },
-  linarith [@one_le_q α _ _]
-end
-
-lemma cf_rw_two {r : ℝ} (hr : r > 0) (i : ℕ) :
-  ∥((((one_coeff_poly q)^n).eval₂ coe (r*(root q n j)^i)) / ((r^j * (root q n j)^(j*i))) : ℂ)∥
-      ≤  (((one_coeff_poly q)^n).eval₂ coe r) / r^j :=
-have ish : is_semiring_hom (coe : ℕ → ℂ), by constructor; simp,
-begin
-  rw [norm_div, norm_mul, norm_pow, complex.norm_real, real.norm_eq_abs, abs_of_pos hr,
-      norm_pow, norm_root, one_pow, mul_one],
-  apply div_le_div_of_le_of_pos,
-  { dsimp only [polynomial.eval₂, finsupp.sum],
-    convert norm_triangle_sum _ _,
-    ext x,
-    rw [norm_mul, norm_pow, norm_mul, complex.norm_real, real.norm_eq_abs,
-        abs_of_pos hr, norm_pow, norm_root, one_pow, mul_one, complex.norm_nat] },
-  { apply pow_pos hr }
-end
-
-theorem lemma_13_10 {r : ℝ} (hr : r > 0) :
-  ↑(cf q n j) ≤ (((one_coeff_poly q)^n).eval₂ coe r) / r^j :=
-calc (cf q n j : ℝ)
-      = abs (cf q n j : ℝ) : by rw abs_of_nonneg; apply nat.cast_nonneg
-  ... = complex.abs (cf q n j : ℝ) : by rw complex.abs_of_real
-  ... = complex.abs (cf q n j) : by simp
-  ... = complex.abs ((1/root_index q n j) * (finset.range (root_index q n j)).sum
-    (λ i, (((one_coeff_poly q)^n).eval₂ coe (r*(root q n j)^i)) / ((r^j * (root q n j)^(j*i))))) :
-      by rw cf_rw_one _ _ hr
-  ... = (1/↑(root_index q n j)) * complex.abs ((finset.range (root_index q n j)).sum
-    (λ i, (((one_coeff_poly q)^n).eval₂ coe (r*(root q n j)^i)) / ((r^j * (root q n j)^(j*i))))) :
-      by rw [complex.abs_mul, complex.abs_div, complex.abs_one, complex.abs_of_nat]
-  ... = (1/↑(root_index q n j)) * ∥((finset.range (root_index q n j)).sum
-    (λ i, (((one_coeff_poly q)^n).eval₂ coe (r*(root q n j)^i)) / ((r^j * (root q n j)^(j*i)))) : ℂ)∥ : rfl
-  ... ≤ (1/↑(root_index q n j)) * (finset.range (root_index q n j)).sum
-    (λ i, ∥((((one_coeff_poly q)^n).eval₂ coe (r*(root q n j)^i)) / ((r^j * (root q n j)^(j*i))) : ℂ)∥) :
-      mul_le_mul_of_nonneg_left (norm_triangle_sum _ _) (one_div_root_index_nonneg _ _ _)
-  ... ≤ (1/↑(root_index q n j)) * (finset.range (root_index q n j)).sum
-    (λ i, ((((one_coeff_poly q)^n).eval₂ coe r) / r^j)) :
-     mul_le_mul_of_nonneg_left (finset.sum_le_sum (λ i _, cf_rw_two _ _ hr i)) (one_div_root_index_nonneg _ _ _)
-  ... = (1/↑(root_index q n j)) * root_index q n j * ((((one_coeff_poly q)^n).eval₂ coe r) / r^j) :
-      by rw [finset.sum_const, add_monoid.smul_eq_mul, finset.card_range, mul_assoc]
-  ... = (((one_coeff_poly q)^n).eval₂ coe r) / r^j :
-      by rw [one_div_mul_cancel, one_mul]; simpa using root_index_ne_zero q n j
-
-end
-
-end
-
-section
-variables {α : Type} [discrete_field α] [fintype α] (N : ℕ)
-local notation `m` := m α (3*N)
-local notation `q` := @q α _ _
-
--- this could be revisited and cleaned up, possibly split into smaller lemmas
--- note: actually could be a strict <
-theorem lemma_13_11 {r : ℝ} (hr : 0 < r) (hr2 : r < 1) :
-  ↑(m ((q-1)*N)) ≤ (1/(1-r)) * ((crq r q))^(3*N) :=
-have hq : ((q : ℚ) - 1)*N ≥ 0, from mul_nonneg (sub_nonneg_of_le one_le_q_real) (nat.cast_nonneg _),
-calc
-  ↑(m ((q-1)*N))
-     = ↑((finset.range (⌊((q : ℚ)-1)*N⌋.nat_abs + 1)).sum (cf q (3*N))) : by rw lemma_13_8 _ hq
- ... = (↑((finset.range ((q-1)*N + 1)).sum (cf q (3*N))) : ℝ) :
-          begin
-            congr,
-            have : ((q : ℚ) - 1) * N = (((q - 1)*N : ℕ) : ℤ), by simp [nat.cast_sub one_le_q],
-            rw [this, floor_coe, int.nat_abs_of_nat]
-          end
- ... = (finset.range ((q-1)*N + 1)).sum (λ j, (cf q (3*N) j : ℝ)) : by rw finset.sum_hom (coe : ℕ → ℝ)
- ... ≤ (finset.range ((q-1)*N + 1)).sum (λ j, ((one_coeff_poly q).eval₂ coe r)^(3*N) / r^j) :
-         finset.sum_le_sum $ λ _ _, by convert lemma_13_10 _ _ hr; rw polynomial.eval₂_pow
- ... = (finset.range ((q-1)*N + 1)).sum (λ j, ((one_coeff_poly q).eval₂ coe r)^(3*N) * (1/r^j)) :
-         by congr; ext; rw div_eq_mul_one_div
- ... = ((one_coeff_poly q).eval₂ coe r)^(3*N) * (finset.range ((q-1)*N + 1)).sum (λ j, (1/r)^j) :
-         by rw [←finset.mul_sum]; conv {to_rhs, congr, skip, congr, skip, funext, rw one_div_pow (ne_of_gt hr)}
- ... ≤ ((one_coeff_poly q).eval₂ coe r)^(3*N) * ((1/(1 - r)) * (1 / (r^((q-1)*N)))) :
-          begin
-            apply mul_le_mul_of_nonneg_left,
-            { apply le_of_lt,
-              simp only [one_div_eq_inv],
-              convert geom_sum_bound _ _ _ _,
-              { apply inv_eq_one_div },
-              repeat { assumption } },
-            { apply pow_nonneg,
-              convert one_coeff_poly_eval₂_nonneg _ _ (le_of_lt hr),
-              intro,
-              apply nat.cast_nonneg }
-          end
- ... = (1/(1 - r)) * (((one_coeff_poly q).eval₂ coe r)^(3*N) * ((1 / (r^((q-1)*N))))) :
-         by have : ∀ a b c : ℝ, a * (b * c) = b * (a * c) := (λ _ _ _, by ac_refl); apply this
- ... = (1/(1-r)) * ((crq r q))^(3*N) :
-          begin
-            rw [crq, div_pow, ←div_eq_mul_one_div],
-            congr' 2,
-            rw [←real.rpow_nat_cast, ←real.rpow_nat_cast, ←real.rpow_mul],
-            congr' 1,
-            simp,
-            rw [←mul_assoc, div_mul_cancel, nat.cast_sub, nat.cast_one],
-            simp,
-            { apply one_le_q },
-            { norm_num },
-            { exact le_of_lt hr },
-            { apply ne_of_gt,
-              exact real.rpow_pos_of_pos hr _ }
-          end
-end
-
-section
-
-def poly_cast {α : Type*} [comm_semiring α] [decidable_eq α] {n n' : ℕ} (h : n ≤ n')
-  (p : mv_polynomial (fin n) α) :  mv_polynomial (fin n') α :=
-p.rename (fin.cast_le h)
-
-variables {α : Type} [discrete_field α] [fintype α] {n n' : ℕ} (h : n ≤ n')
-
-lemma poly_cast_mem_M {p : mv_polynomial (fin n) α} (hM : p ∈ @M α _ _ n) :
-  poly_cast h p ∈ @M α _ _ n' :=
-begin
-  simp [M, poly_cast] at hM ⊢,
-  rcases hM with ⟨a', ⟨a, ha, rfl⟩, rfl⟩,
-  simp only [mv_polynomial.rename_monomial],
-  refine ⟨_, ⟨a.emb_domain ⟨_, fin.injective_cast_le h⟩, _⟩, rfl⟩,
-  rw [← finsupp.emb_domain_map_range, finsupp.emb_domain_eq_map_domain],
-  refl
-end
-
-lemma poly_cast_mem_M' {p : mv_polynomial (fin n) α} {d} (hM : p ∈ @M' α _ _ n d) :
-  poly_cast h p ∈ @M' α _ _ n' d :=
-begin
-  simp only [M', finset.mem_filter, poly_cast] at hM ⊢,
-  refine ⟨poly_cast_mem_M h hM.1,
-    le_trans (nat.cast_le.2 $ mv_polynomial.total_degree_rename_le _ _) hM.2⟩
-end
-
-lemma poly_cast_inj {p1 p2 : mv_polynomial (fin n) α} (hp : poly_cast h p1 = poly_cast h p2) :
-  p1 = p2 :=
-mv_polynomial.injective_rename _ (fin.injective_cast_le h) hp
-
-end
-
-lemma m_monotone_in_n {α : Type} [discrete_field α] [fintype α] {n n' : ℕ} (d : ℚ) (h : n ≤ n') :
-  m α n d ≤ m α n' d :=
-begin
-  rw [←M'_card, ←M'_card],
-  apply finset.card_le_card_of_inj_on (poly_cast h),
-  { intros _ H, apply poly_cast_mem_M' h H },
-  { intros _ _ _ _ he, apply poly_cast_inj h he },
-  { apply_instance },
-  { apply_instance }
-end
-
-lemma m_monotone_in_d {α : Type} [discrete_field α] [fintype α] (n : ℕ) {d d' : ℚ} (h : d ≤ d') :
-  m α n d ≤ m α n d' :=
-begin
-  rw [←M'_card, ←M'_card],
-  apply finset.card_le_of_subset,
-  intros a ha,
-  simp [M'] at ha ⊢,
-  exact ⟨ha.1, le_trans ha.2 h⟩
 end
 
 lemma one_coeff_poly_eval_ge_one {r : ℝ} {q : ℕ} (hr : 0 ≤ r) (hq : 1 ≤ q) :
@@ -757,7 +531,6 @@ begin
       exact hr } }
 end
 
-
 lemma crq_ge_one {r : ℝ} {q : ℕ} (hr : 0 < r) (hr2 : r ≤ 1) (hq : 1 ≤ q) : 1 ≤ crq r q :=
 begin
   rw [crq, le_div_iff, one_mul],
@@ -770,67 +543,6 @@ begin
         { norm_num } },
     { apply one_coeff_poly_eval_ge_one (le_of_lt hr) hq } },
   { apply real.rpow_pos_of_pos hr }
-end
-
-section
-variables (α : Type) [discrete_field α] [fintype α] (n : ℕ)
-local notation `m` := m α
-local notation `q` := @q α _ _
-
-lemma q_ge_two : q ≥ 2 :=
-finset.card_le_of_inj_on (λ n, if n = 0 then 0 else 1) (λ _ _, finset.mem_univ _) $ λ i j hi hj,
-  begin
-    split_ifs; simp *,
-    have hi' : i = 1,
-      from nat.eq_of_lt_succ_of_not_lt hi (not_lt_of_ge (nat.succ_le_of_lt (nat.pos_of_ne_zero h))),
-    have hj' : j = 1,
-      from nat.eq_of_lt_succ_of_not_lt hj (not_lt_of_ge (nat.succ_le_of_lt (nat.pos_of_ne_zero h_1))),
-    rwa ←hj' at hi'
-  end
-
-variable {α}
-
-lemma exists_div_three (k : ℕ) : ∃ i, i < 3 ∧ 3 ∣ k + i :=
-begin
-  use if k % 3 = 0 then 0 else 3 - (k%3),
-  split,
-  { split_ifs,
-    { exact dec_trivial },
-    { apply nat.sub_lt,
-      exact dec_trivial,
-      exact nat.pos_of_ne_zero h } },
-  { split_ifs,
-    { apply nat.dvd_of_mod_eq_zero, simpa },
-    { rw ←nat.mod_add_div k 3, simp,
-      rw [add_comm, add_assoc, nat.sub_add_cancel],
-      { apply dvd_add,
-        { apply dvd_mul_right },
-        { exact dec_trivial } },
-      { apply le_of_lt, apply nat.mod_lt, exact dec_trivial } } }
-end
-
-/- theorem theorem_13_13 {r : ℝ} (hr : 0 < r) (hr2 : r < 1) :
-  ↑(m n ((q - 1)*n / 3)) ≤ ((crq r q)^2 / (1 - r)) * (crq r q)^n :=
-let ⟨i, hi, ⟨N', hN'⟩⟩ := exists_div_three n,
-    n' := n + i in
-have hdc : ((3*N' : ℕ) : ℚ)/3 = N',
-  by rw [nat.cast_mul, mul_comm, mul_div_assoc]; simp [div_self (show (3 : ℚ) ≠ 0, by norm_num)],
-have hnn' : n ≤ n', from nat.le_add_right _ _,
-calc ↑(m n ((q - 1)*n / 3))
-     ≤ ↑(m n ((q - 1)*n' / 3)) : nat.cast_le.2 $ m_monotone_in_d _ $ div_le_div_of_le_of_pos
-        (mul_le_mul_of_nonneg_left (nat.cast_le.2 hnn')
-          (sub_nonneg_of_le (show ((1 : ℕ) : ℚ) ≤ q, from nat.cast_le.2 one_le_q )))
-        (by norm_num)
- ... ≤ ↑(m n' ((q-1)*n' / 3)) : nat.cast_le.2 $ m_monotone_in_n _ (nat.le_add_right _ _)
- ... ≤ 1/(1-r) * (crq r q)^n' :
-   by change n' with n+i; rw [hN', mul_div_assoc, hdc]; exact lemma_13_11 _ hr hr2
- ... ≤ 1/(1-r) * (crq r q)^(n+2) :
-    mul_le_mul_of_nonneg_left (pow_le_pow (crq_ge_one hr (le_of_lt hr2) one_le_q)
-      (nat.le_of_lt_succ (nat.add_le_add_left hi _))) (div_nonneg zero_le_one (by linarith))
- ... = 1/(1-r) * ((crq r q)^2 * (crq r q)^n) : by rw [←pow_add, add_comm]
- ... = ((crq r q)^2 / (1 - r)) * (crq r q)^n : by rw [←mul_assoc, mul_comm (1/(1-r)), ←mul_div_assoc, mul_one]
-
-end -/
 end
 
 lemma crq_eq (r : ℝ) (q : ℕ) :
@@ -969,7 +681,7 @@ theorem general_cap_set {α : Type} [discrete_field α] [fintype α] :
    (∀ x y z : fin n → α, x ∈ A → y ∈ A → z ∈ A → a • x + b • y + c • z = 0 → x = y ∧ x = z) →
     ↑A.card ≤ B * C^n :=
 begin
-  rcases lemma_13_15 (q_ge_two α) with ⟨B, hB, hB2, hBr⟩,
+  rcases lemma_13_15 q_ge_two with ⟨B, hB, hB2, hBr⟩,
   repeat {apply exists.intro},
   refine ⟨_, _, hBr, λ a b c n A hc habc hall, theorem_13_14 hc habc hall hB hB2⟩,
   { norm_num },

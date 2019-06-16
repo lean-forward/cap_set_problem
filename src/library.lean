@@ -131,6 +131,11 @@ lemma sum_le_card_mul_of_bdd {α β} [decidable_eq α] [ordered_comm_monoid β] 
 calc s.sum f ≤ s.sum (λ _, a) : finset.sum_le_sum' h
          ... = add_monoid.smul s.card a : finset.sum_const _
 
+lemma sup_range (n : ℕ) : @finset.sup (with_bot ℕ) _ _ (finset.range (n+1)) some = some n :=
+le_antisymm
+  (finset.sup_le $ λ b hb, by simp at hb ⊢; apply nat.le_of_lt_succ hb)
+  (finset.le_sup $ by simp [zero_lt_one])
+
 end finset
 
 namespace finsupp

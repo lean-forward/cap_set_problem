@@ -9,6 +9,9 @@ by J. S. Ellenberg and D. Gijswijt
 This file proves a result about the coefficients of a complex polynomial.
 It is independent of the rest of our development so far, and used in section_13b.lean.
 It corresponds to the first part of section 13 of our blueprint.
+
+NOTE: after simplifications to the proof suggested by Dion Gijswijt, this part of the argument
+is unnecessary. This file is not imported in the final result.
 -/
 
 import tactic.linarith
