@@ -10,7 +10,7 @@ This file contains various support functions, definitions, etc. that will move
 to mathlib as we have time.
 -/
 
-import data.mv_polynomial data.matrix
+import data.mv_polynomial linear_algebra.matrix
 import linear_algebra.finsupp linear_algebra.matrix
 import topology.instances.real analysis.complex.exponential
 import field_theory.finite field_theory.mv_polynomial
@@ -128,7 +128,7 @@ namespace finset
 
 lemma sum_le_card_mul_of_bdd {α β} [decidable_eq α] [ordered_comm_monoid β] (s : finset α) {f : α → β}
   {a : β} (h : ∀ i, i ∈ s → f i ≤ a) : s.sum f ≤ add_monoid.smul s.card a :=
-calc s.sum f ≤ s.sum (λ _, a) : finset.sum_le_sum' h
+calc s.sum f ≤ s.sum (λ _, a) : finset.sum_le_sum h
          ... = add_monoid.smul s.card a : finset.sum_const _
 
 lemma sup_range (n : ℕ) : @finset.sup (with_bot ℕ) _ _ (finset.range (n+1)) some = some n :=
@@ -260,8 +260,8 @@ begin
     { rw [fin.sum, finset.sum_image], refl,
       intros x _ y _ heq,
       rw fin.ext_iff at ⊢ heq, exact heq } },
-  { apply finset.eq_empty_of_forall_not_mem,
-    intros x hx,
+  { rw finset.disjoint_iff_inter_eq_empty,
+    refine finset.eq_empty_of_forall_not_mem (λ x hx, _),
     rcases finset.mem_image.1 (finset.mem_of_mem_inter_left hx) with ⟨y, _, hy⟩,
     have hxn : x.val = n, from fin.veq_of_eq (finset.mem_singleton.1 (finset.mem_of_mem_inter_right hx)),
     have hxy : y.val = x.val, from fin.veq_of_eq hy,

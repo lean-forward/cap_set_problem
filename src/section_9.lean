@@ -11,7 +11,7 @@ It corresponds to section 9 of our blueprint.
 -/
 
 import library
-
+noncomputable theory
 open mv_polynomial
 
 section section_9

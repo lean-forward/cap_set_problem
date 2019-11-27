@@ -11,7 +11,7 @@ It corresponds to sections 10-12 of our blueprint.
 -/
 
 import library section_9
-
+noncomputable theory
 open mv_polynomial
 
 section
@@ -39,25 +39,40 @@ instance S.vector_space : vector_space α S := { .. S.module }
 
 instance fin_q_has_zero : has_zero (fin q) := ⟨⟨0, one_le_q⟩⟩
 
-def M : finset (mv_polynomial (fin n) α):=
-(finset.univ.image $ λ f : fin n →₀ fin q, f.map_range fin.val rfl).image (λd : fin n →₀ ℕ, monomial d (1:α))
-
-lemma linear_independent_M : linear_independent α (↑M : set (mv_polynomial (fin n) α)) :=
-(mv_polynomial.is_basis_monomials _ _).1.mono $ λ p hp,
-  let ⟨s, _, hsp⟩ := finset.mem_image.1 hp in
-  set.mem_range.2 ⟨s, hsp⟩
 
 def fin_map_to_mono_map (f : fin n → fin q) : fin n →₀ ℕ := λ k, (f k).val
 def fmtmm : has_coe (fin n → fin q) (fin n →₀ ℕ) := ⟨fin_map_to_mono_map⟩
-local attribute [instance] fmtmm
+def fin_finmap_to_mono_map (f : fin n →₀ fin q) : fin n →₀ ℕ := λ k, (f k).val
+def fmtmm' : has_coe (fin n →₀ fin q) (fin n →₀ ℕ) := ⟨λ f, fin_finmap_to_mono_map f⟩
 
-lemma monomial_mem_M (f : fin n → fin q) : monomial ↑f (1 : α) ∈ M :=
-begin
-  apply finset.mem_image.2,
+lemma fin_finmap_to_mono_map_inj : function.injective fin_finmap_to_mono_map :=
+λ f1 f2 hf, finsupp.ext $ λ _, fin.eq_of_veq $ finsupp.congr_fun hf _
+
+local attribute [instance] fmtmm fmtmm'
+
+/- def M : finset (mv_polynomial (fin n) α):=
+(finset.univ.image $ λ f : fin n →₀ fin q, f.map_range fin.val rfl).image (λd : fin n →₀ ℕ, monomial d (1:α)) -/
+
+def M : (fin n →₀ fin q) → mv_polynomial (fin n) α :=
+λ f, monomial f (1 : α)
+
+#check linear_independent.mono
+
+lemma linear_independent_M : linear_independent α M :=
+(mv_polynomial.is_basis_monomials (fin n) α).1.comp _ fin_finmap_to_mono_map_inj
+open function
+
+open set
+
+lemma monomial_mem_M (f : fin n → fin q) : monomial ↑f (1 : α) ∈ range M :=
+⟨f, rfl⟩
+/- begin
+  use f,
+/-   apply finset.mem_image.2,
   refine ⟨f, _, rfl⟩,
   apply finset.mem_image.2,
-  use [f, finset.mem_univ _], ext, refl
-end
+  use [f, finset.mem_univ _], ext, refl -/
+end -/
 
 @[simp] lemma coe_fin_eq_coe_fin (f g : (fin n → fin q)) : (f : fin n →₀ ℕ) = g ↔ f = g :=
 begin
@@ -69,8 +84,11 @@ begin
   { intro h, rw h }
 end
 
-lemma M_spec {x} (hx : x ∈ M) : ∃ s : fin n → fin q, monomial ↑s 1 = x :=
-begin
+lemma M_spec {x} : x ∈ range M → ∃ s : fin n → fin q, monomial ↑s 1 = x
+| ⟨d, hd⟩ := ⟨d, hd⟩
+
+
+/- begin
   rcases finset.mem_image.1 hx with ⟨d, ⟨hd, hdmon⟩⟩,
   have h : ∀ k, d k < q,
   { intro k,
@@ -79,22 +97,26 @@ begin
     rw finsupp.map_range_apply at hdl', rw ←hdl', apply fin.is_lt },
   use λ k, ⟨d k, h k⟩,
   rw ←hdmon, congr, ext, refl
+end -/
+
+
+section
+open_locale classical
+noncomputable def monom_exps (p : (mv_polynomial (fin n) α)) : (fin n → fin q) :=
+if hp : p ∈ range M then classical.some (M_spec hp) else 0
 end
 
-noncomputable def monom_exps (p : (mv_polynomial (fin n) α)) : (fin n → fin q) :=
-if hp : p ∈ M then classical.some (M_spec hp) else 0
-
-lemma monom_exps_def {x} (hx : x ∈ M) : monomial ↑(monom_exps x) 1 = x :=
+lemma monom_exps_def {x} (hx : x ∈ range M) : monomial ↑(monom_exps x) 1 = x :=
 by simpa [hx, monom_exps] using (classical.some_spec (M_spec hx))
 
-lemma monom_exps_inj {x y} (hx : x ∈ M) (hy : y ∈ M) (hxy : monom_exps x = monom_exps y) : x = y :=
+lemma monom_exps_inj {x y} (hx : x ∈ range M) (hy : y ∈ range M) (hxy : monom_exps x = monom_exps y) : x = y :=
 have h1 : _, from monom_exps_def hx, have h2 : _, from monom_exps_def hy,
 by rw [←h1, ←h2, hxy]
 
 @[simp] lemma monom_exps_monomial (f : fin n → fin q) : monom_exps (monomial f 1) = f :=
 by simpa using finsupp.eq_of_single_eq_left (monom_exps_def (monomial_mem_M _)) one_ne_zero
 
-lemma monom_exps_surj (f : fin n → fin q) : ∃ x, x ∈ M ∧ monom_exps x = f :=
+lemma monom_exps_surj (f : fin n → fin q) : ∃ x, x ∈ range M ∧ monom_exps x = f :=
 ⟨monomial f 1, monomial_mem_M _, monom_exps_monomial _⟩
 
 -- do more generally
@@ -115,12 +137,14 @@ end
 
 lemma eval_add (p : S) (a b : fin n → α) :
   p.eval (a + b) = p.sum (λe x, multiset.sum $
-    e.to_multiset.diagonal.map $ λp, x * ((p.1.map $ λi, a i).prod * (p.2.map $ λi, b i).prod)) :=
+    e.to_multiset.antidiagonal.map $ λp, x * ((p.1.map $ λi, a i).prod * (p.2.map $ λi, b i).prod)) :=
 by simp [mv_polynomial_eval_eq, multiset.sum_map_mul_left, multiset.prod_map_add]
 
 section
 
-def M' (d : ℚ) := M.filter (λ m, d ≥ mv_polynomial.total_degree m)
+#check M
+def M' (d : ℚ) : (fin n →₀ fin q) → mv_polynomial (fin n) α := _
+--:= M.filter (λ m, d ≥ mv_polynomial.total_degree m)
 end
 
 lemma linear_independent_M' (d) : linear_independent α (↑(M' d) : set (mv_polynomial (fin n) α)) :=
